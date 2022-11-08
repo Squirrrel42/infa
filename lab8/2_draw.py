@@ -17,7 +17,6 @@ for i in range(N):
     line(screen, color, (x, y1), (x, y2))
     x += h
 
-pygame.display.update()
 clock = pygame.time.Clock()
 finished = False
 
@@ -26,5 +25,9 @@ while not finished:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             finished = True
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            circle(screen, (255, 0, 0), [event.pos[0], event.pos[1]], 20)
+
+    pygame.display.update()
 
 pygame.quit()
