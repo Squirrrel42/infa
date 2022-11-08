@@ -89,7 +89,7 @@ class Skull:
         self.x = random.randint(self.r, WIDTH - self.r)
         self.y = random.randint(self.r, HEIGHT - self.r)
 
-        self.speed = 10
+        self.speed = 5
 
         self.image = pygame.image.load("skull.png").convert_alpha()
         self.image = pygame.transform.scale(self.image, (self.r * 2, self.r * 2))
@@ -185,10 +185,13 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 finished = False
 
+pygame.mixer.music.load("tu_tududu.mp3")
+pygame.mixer.music.play(-1)
+
 balls = []
 points = Points()
 
-chance = [0, 0, 0, 0, 0, 0, 0, 1, 1, 2]
+chance = [0, 0, 0, 0, 0, 1, 1, 1, 2, 2]
 
 time_ = 0
 
@@ -196,12 +199,17 @@ death = False
 
 def new():
     choice = random.choice(chance)
-    if (choice == 0):
-        return Ball()
-    elif(chance == 1):
-        return Skull()
-    else:
-        return Rat()
+    print(choice)
+    match choice:
+        case 0:
+            return Ball()
+        case 1:
+            return Skull()
+        case 2:
+            return Rat()
+        case _:
+            return Ball()
+
 
 while not finished:
     screen.fill(WHITE)
@@ -264,6 +272,8 @@ if(death == True):
     screen.blit(text, (50, int(HEIGHT/3 + WIDTH/4 + 72)))
 
     pygame.display.update()
+
+    pygame.mixer.music.stop()
 
     pygame.mixer.music.load("death.mp3")
     pygame.mixer.music.play()
