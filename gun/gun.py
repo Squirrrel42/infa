@@ -46,7 +46,7 @@ class Ball:
 
         self.live = 300
 
-        self.acc = 1
+        self.acc = -1
 
     def move(self):
         """Переместить мяч по прошествии единицы времени.
@@ -71,7 +71,7 @@ class Ball:
             self.y = self.r
 
         # ускорение свободного падения
-        self.vy -= self.acc
+        self.vy += self.acc
 
         # сопротивление воздуха
         self.vy -= self.vy * 0.02
@@ -79,7 +79,7 @@ class Ball:
 
         # перемещение
         self.x += self.vx
-        self.y -= self.vy
+        self.y -= self.vy # минус потому что ось y направлена вниз
 
 
     def draw(self):
@@ -108,6 +108,8 @@ class Ball:
 class Rocket(Ball):
     def draw(self):
         pygame.draw.circle(self.screen, ORANGE, (self.x, self.y), self.r)
+
+
 
 class Gun:
     def __init__(self, screen):
