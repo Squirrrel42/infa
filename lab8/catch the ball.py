@@ -6,12 +6,12 @@ import math
 FPS = 60
 
 WHITE = (255, 255, 255)
-RED = (200, 0, 0)
-BLUE = (0, 0, 200)
-YELLOW = (200, 200, 0)
-GREEN = (0, 200, 0)
-MAGENTA = (200, 0, 200)
-CYAN = (0, 200, 200)
+RED = (220, 0, 0)
+BLUE = (0, 0, 220)
+YELLOW = (220, 220, 0)
+GREEN = (0, 220, 0)
+MAGENTA = (220, 0, 220)
+CYAN = (0, 220, 220)
 BLACK = (0, 0, 0)
 COLORS = [BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
