@@ -16,7 +16,8 @@ CYAN = 0x00FFCC
 BLACK = (0, 0, 0)
 WHITE = 0xFFFFFF
 GREY = 0x7D7D7D
-DARK_GREEN = 0x023020
+DARK_GREEN = 0x317828
+ORANGE = 0xFFBF00
 GAME_COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
 WIDTH = 800
@@ -104,6 +105,10 @@ class Ball:
         else:
             return False
 
+class Rocket(Ball):
+    def draw(self):
+        pygame.draw.circle(self.screen, ORANGE, (self.x, self.y), self.r)
+
 class Gun:
     def __init__(self, screen):
         self.screen = screen
@@ -145,14 +150,14 @@ class Gun:
         if (self.y - self.r <= 0):
             self.y = self.r
 
-    def fire2_start(self, target):
-        if target.live:
+    def fire2_start(self, target, pressed):
+        if target.live and (pressed == 0 or pressed == 2):
             self.f2_on = 1
         else:
             self.f2_on = 0
 
 
-    def fire2_end(self, event, target):
+    def fire2_end(self, event, target, pressed):
         """
         Выстрел мячом.
 
@@ -162,7 +167,12 @@ class Gun:
         global balls, bullet
         if target.live:
             bullet += 1
-            new_ball = Ball(self.screen, self.x, self.y)
+            if(pressed == 0):
+                new_ball = Ball(self.screen, self.x, self.y)
+            elif(pressed == 2):
+                new_ball = Rocket(self.screen, self.x, self.y)
+            else:
+                return
             new_ball.r += 5
             self.an = math.atan2((event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
             new_ball.vx = self.f2_power * math.cos(self.an)
@@ -294,6 +304,8 @@ bullet_mem = bullet
 while not finished:
     screen.fill(WHITE)
 
+
+
     gun.draw()
     if target.live:
         target.draw()
@@ -331,9 +343,13 @@ while not finished:
         if event.type == pygame.QUIT:
             finished = True
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            gun.fire2_start(target)
+            mouse_arr = pygame.mouse.get_pressed()
+            for i in range(len(mouse_arr)):
+                if (mouse_arr[i] == True):
+                    pressed = i
+            gun.fire2_start(target, pressed)
         elif event.type == pygame.MOUSEBUTTONUP:
-            gun.fire2_end(event, target)
+            gun.fire2_end(event, target, pressed)
         elif event.type == pygame.MOUSEMOTION:
             gun.targetting(event)
 
