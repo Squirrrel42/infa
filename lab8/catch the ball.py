@@ -58,7 +58,7 @@ class Ball:
 
         # перемещение
         self.x += self.vx
-        self.y -= self.vy
+        self.y += self.vy
 
     def life(self):
         self.time += 1

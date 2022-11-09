@@ -16,6 +16,7 @@ CYAN = 0x00FFCC
 BLACK = (0, 0, 0)
 WHITE = 0xFFFFFF
 GREY = 0x7D7D7D
+DARK_GREEN = 0x023020
 GAME_COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
 WIDTH = 800
@@ -23,7 +24,7 @@ HEIGHT = 600
 
 
 class Ball:
-    def __init__(self, screen: pygame.Surface, x=40, y=450):
+    def __init__(self, screen: pygame.Surface, x, y):
         """ Конструктор класса ball
 
         Args:
@@ -31,13 +32,19 @@ class Ball:
         y - начальное положение мяча по вертикали
         """
         self.screen = screen
+
         self.x = x
         self.y = y
-        self.r = 10
+
+        self.r = 5
+
         self.vx = 0
         self.vy = 0
-        self.color = choice(GAME_COLORS)
+
+        self.color = BLACK
+
         self.live = 300
+
         self.acc = 1
 
     def move(self):
@@ -62,7 +69,7 @@ class Ball:
             self.vy = -self.vy
             self.y = self.r
 
-        # гравитация
+        # ускорение свободного падения
         self.vy -= self.acc
 
         # сопротивление воздуха
@@ -73,10 +80,6 @@ class Ball:
         self.x += self.vx
         self.y -= self.vy
 
-        # останавливает шарик, если он на земле и у него маленькая скорость
-        if self.vy ** 2 <= 1 and self.y >= HEIGHT - self.r and self.acc != 0:
-            self.vy = 0
-            self.acc = 0
 
     def draw(self):
         pygame.draw.circle(self.screen, self.color, (self.x, self.y), self.r)
@@ -98,19 +101,49 @@ class Ball:
         self.live -= 1
         if(self.live > 0):
             return True
-        elif self.acc == 0:
-            return False
         else:
             return False
-
 
 class Gun:
     def __init__(self, screen):
         self.screen = screen
+
         self.f2_power = 10
+
         self.f2_on = 0
+
         self.an = 1
+
         self.color = GREY
+
+        self.r = 20
+
+        self.x = 40
+        self.y = 450
+
+        self.v = 5
+
+    def move(self):
+        '''
+        чтобы пушка двигалась
+        '''
+
+        key_arr = pygame.key.get_pressed()
+
+        if(key_arr[100] == True):
+            self.x += self.v
+        elif(key_arr[97] == True):
+            self.x -= self.v
+
+        # столкновение со стенам
+        if (self.x + self.r >= WIDTH):
+            self.x = WIDTH - self.r
+        if (self.x - self.r <= 0):
+            self.x = self.r
+        if (self.y + self.r >= HEIGHT):
+            self.y = HEIGHT - self.r
+        if (self.y - self.r <= 0):
+            self.y = self.r
 
     def fire2_start(self, target):
         if target.live:
@@ -129,7 +162,7 @@ class Gun:
         global balls, bullet
         if target.live:
             bullet += 1
-            new_ball = Ball(self.screen)
+            new_ball = Ball(self.screen, self.x, self.y)
             new_ball.r += 5
             self.an = math.atan2((event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
             new_ball.vx = self.f2_power * math.cos(self.an)
@@ -139,42 +172,59 @@ class Gun:
         self.f2_power = 10
 
     def targetting(self, event):
-        """Прицеливание. Зависит от положения мыши."""
+        """
+        Прицеливание. Зависит от положения мыши.
+        """
+        if event.pos[0] == self.x:
+            a = self.x + 0.001
+        else:
+            a = event.pos[0]
+
         if event:
-            self.an = math.atan((event.pos[1]-450) / (event.pos[0]-20))
+            self.an = math.atan((event.pos[1]-self.y) / (a-self.x))
         if self.f2_on:
             self.color = RED
         else:
             self.color = GREY
 
     def draw(self):
-        x0 = 40
-        y0 = 450
+        '''
+        рисуем пушку
+        '''
 
+        # позиция мыши
         pos = pygame.mouse.get_pos()
 
-        vect = [pos[0] - x0, pos[1] - y0]
+        # единичный вектор, направленный от пушки к мыши, и нормальный ему
+        vect = [pos[0] - self.x, pos[1] - self.y]
         mod = math.sqrt(vect[0] ** 2 + vect[1] ** 2)
-        vect = [vect[0]/mod, vect[1]/mod]
+        vect = [vect[0] / mod, vect[1] / mod]
         norm = [-vect[1], vect[0]]
 
+        # рисуем корпус
+        d = self.r
+        D = self.r * 3 / 2
+        pygame.draw.rect(self.screen, DARK_GREEN, (self.x - D / 2, self.y, D, d))
+
+        # рисуем дуло
         length = 5 + self.f2_power / 10
 
-        coordinates = [[x0 + norm[0] * 5, y0 + norm[1] * 5],
-                       [x0 - norm[0] * 5, y0 - norm[1] * 5],
-                       [x0 + (-norm[0] + vect[0] * length) * 5, y0 + (-norm[1] + vect[1] * length) * 5],
-                       [x0 + (norm[0] + vect[0] * length) * 5, y0 + (norm[1] + vect[1] * length) * 5]]
+        coordinates = [[self.x + norm[0] * 5, self.y + norm[1] * 5],
+                       [self.x - norm[0] * 5, self.y - norm[1] * 5],
+                       [self.x + (-norm[0] + vect[0] * length) * 5, self.y + (-norm[1] + vect[1] * length) * 5],
+                       [self.x + (norm[0] + vect[0] * length) * 5, self.y + (norm[1] + vect[1] * length) * 5]]
 
-        pygame.draw.polygon(screen, self.color, coordinates)
+        pygame.draw.polygon(self.screen, self.color, coordinates)
+        pygame.draw.circle(self.screen, self.color, (self.x, self.y), 5)
+
 
     def power_up(self):
         if self.f2_on:
-            if self.f2_power < 100:
+            if self.f2_power < 50:
                 self.f2_power += 1
             self.color = RED
         else:
             self.color = GREY
-
 
 class Target:
     def __init__(self):
@@ -183,11 +233,40 @@ class Target:
         self.new_target()
 
     def new_target(self):
-        """ Инициализация новой цели. """
-        self.x = random.randint(600, 780)
-        self.y = random.randint(300, 550)
-        self.r = random.randint(2, 50)
+        """
+        Инициализация новой цели.
+        """
+        self.r = random.randint(5, 25)
+
+        while True:
+            self.x = random.randint(self.r, WIDTH - self.r)
+            self.y = random.randint(self.r, HEIGHT - self.r)
+            if(math.sqrt((self.x - gun.x) ** 2 + (self.y - gun.y) ** 2) >= 200):
+                break
+
+        self.vx = random.randint(2, 10)
+        self.vy = random.randint(2, 10)
+
         self.color = RED
+
+    def move(self):
+        # столкновение со стенам
+        if (self.x + self.r >= WIDTH):
+            self.vx = -self.vx
+            self.x = WIDTH - self.r
+        if (self.x - self.r <= 0):
+            self.vx = -self.vx
+            self.x = self.r
+        if (self.y + self.r >= HEIGHT):
+            self.vy = -self.vy
+            self.y = HEIGHT - self.r
+        if (self.y - self.r <= 0):
+            self.vy = -self.vy
+            self.y = self.r
+
+        # перемещение
+        self.x += self.vx
+        self.y += self.vy
 
     def hit(self, points=1):
         """Попадание шарика в цель."""
@@ -222,6 +301,8 @@ while not finished:
         b.draw()
 
 
+
+    # будет писать после каждого попадания сколько понадобилось шаров и запретит стрлять в течение нескольких секунд после
     if not target.live:
         if time <= 300:
             time += 1
@@ -256,6 +337,8 @@ while not finished:
         elif event.type == pygame.MOUSEMOTION:
             gun.targetting(event)
 
+    gun.move()
+
     for b in balls:
         b.move()
         if b.hittest(target) and target.live:
@@ -268,11 +351,15 @@ while not finished:
 
             bullet = 0
 
-
+    if target.live:
+        target.move()
 
     for b in balls:
         if not b.life():
             balls.remove(b)
+
+
+
 
 
     gun.power_up()
