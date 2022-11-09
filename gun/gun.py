@@ -25,7 +25,7 @@ HEIGHT = 600
 
 
 class Ball:
-    def __init__(self, screen: pygame.Surface, x, y):
+    def __init__(self, screen: pygame.Surface, x, y, live_long):
         """ Конструктор класса ball
 
         Args:
@@ -44,7 +44,7 @@ class Ball:
 
         self.color = BLACK
 
-        self.live = 300
+        self.live = live_long
 
         self.acc = -1
 
@@ -109,19 +109,30 @@ class Rocket(Ball):
     def draw(self):
         pygame.draw.circle(self.screen, ORANGE, (self.x, self.y), self.r)
 
+        # получим единичный вектор, направленный вдоль скорости
+        vect = [self.vx, self.vy]
+        mod = math.sqrt(self.vx ** 2 + self.vy ** 2)
+        if(mod == 0):
+            vect = [0, 0]
+        else:
+            vect = [vect[0] / mod, vect[1] / mod]
+
+
+        pygame.draw.line(self.screen, BLACK, (self.x, self. y), (self.x - vect[0] * 10, self.y - vect[1] * 10))
+
     def move(self):
         # столкновение со стенам
         if (self.x + self.r >= WIDTH):
-            self.vx = -self.vx
+            self.vx = -self.vx / 10
             self.x = WIDTH - self.r
         if (self.x - self.r <= 0):
-            self.vx = -self.vx
+            self.vx = -self.vx / 10
             self.x = self.r
         if (self.y + self.r >= HEIGHT):
-            self.vy = -self.vy
+            self.vy = -self.vy / 10
             self.y = HEIGHT - self.r
         if (self.y - self.r <= 0):
-            self.vy = -self.vy
+            self.vy = -self.vy / 10
             self.y = self.r
 
         # перемещение
@@ -196,10 +207,10 @@ class Gun:
         if target.live:
             bullet += 1
             if(pressed == 0):
-                new_ball = Ball(self.screen, self.x, self.y)
+                new_ball = Ball(self.screen, self.x, self.y, 300)
                 speed = 1
             elif(pressed == 2):
-                new_ball = Rocket(self.screen, self.x, self.y)
+                new_ball = Rocket(self.screen, self.x, self.y, 600)
                 speed = 0.1
             else:
                 return
@@ -256,7 +267,6 @@ class Gun:
 
         pygame.draw.polygon(self.screen, self.color, coordinates)
         pygame.draw.circle(self.screen, self.color, (self.x, self.y), 5)
-
 
     def power_up(self):
         if self.f2_on:
