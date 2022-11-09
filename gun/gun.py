@@ -109,7 +109,33 @@ class Rocket(Ball):
     def draw(self):
         pygame.draw.circle(self.screen, ORANGE, (self.x, self.y), self.r)
 
+    def move(self):
+        # столкновение со стенам
+        if (self.x + self.r >= WIDTH):
+            self.vx = -self.vx
+            self.x = WIDTH - self.r
+        if (self.x - self.r <= 0):
+            self.vx = -self.vx
+            self.x = self.r
+        if (self.y + self.r >= HEIGHT):
+            self.vy = -self.vy
+            self.y = HEIGHT - self.r
+        if (self.y - self.r <= 0):
+            self.vy = -self.vy
+            self.y = self.r
 
+        # перемещение
+        pos = pygame.mouse.get_pos()
+        mod = math.sqrt((self.x - pos[0]) ** 2 + (self.y - pos[1]) ** 2)
+        a = [(self.x - pos[0]) / mod, (self.y - pos[1]) / mod]
+
+        koef = 0.4
+
+        self.vx -= a[0] * koef
+        self.vy -= a[1] * koef
+
+        self.x += self.vx
+        self.y += self.vy
 
 class Gun:
     def __init__(self, screen):
@@ -171,14 +197,16 @@ class Gun:
             bullet += 1
             if(pressed == 0):
                 new_ball = Ball(self.screen, self.x, self.y)
+                speed = 1
             elif(pressed == 2):
                 new_ball = Rocket(self.screen, self.x, self.y)
+                speed = 0.1
             else:
                 return
             new_ball.r += 5
             self.an = math.atan2((event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
-            new_ball.vx = self.f2_power * math.cos(self.an)
-            new_ball.vy = - self.f2_power * math.sin(self.an)
+            new_ball.vx = self.f2_power * math.cos(self.an) * speed
+            new_ball.vy = - self.f2_power * math.sin(self.an) * speed
             balls.append(new_ball)
         self.f2_on = 0
         self.f2_power = 10
