@@ -20,8 +20,8 @@ DARK_GREEN = 0x317828
 ORANGE = 0xFFBF00
 GAME_COLORS = [RED, BLUE, YELLOW, GREEN, MAGENTA, CYAN]
 
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 1000
+HEIGHT = 800
 
 
 class Ball:
@@ -107,6 +107,7 @@ class Ball:
         else:
             return False
 
+
 class Rocket(Ball):
     def draw(self):
 
@@ -155,6 +156,7 @@ class Rocket(Ball):
         self.x += self.vx
         self.y += self.vy
 
+
 class Gun:
     def __init__(self, screen):
         self.screen = screen
@@ -170,86 +172,16 @@ class Gun:
         self.r = 20
 
         self.x = 40
-        self.y = 450
+        self.y = HEIGHT - self.r
 
         self.v = 5
 
-    def move(self):
-        '''
-        чтобы пушка двигалась
-        '''
+        self.cannonball_amount = 5
+        self.rocket_amount = 1
 
-        key_arr = pygame.key.get_pressed()
-
-        if(key_arr[100] == True):
-            self.x += self.v
-        elif(key_arr[97] == True):
-            self.x -= self.v
-
-        # столкновение со стенам
-        if (self.x + self.r >= WIDTH):
-            self.x = WIDTH - self.r
-        if (self.x - self.r <= 0):
-            self.x = self.r
-        if (self.y + self.r >= HEIGHT):
-            self.y = HEIGHT - self.r
-        if (self.y - self.r <= 0):
-            self.y = self.r
-
-    def fire2_start(self, condition, pressed):
-        if condition and (pressed == 0 or pressed == 2):
-            self.f2_on = 1
-        else:
-            self.f2_on = 0
-
-
-    def fire2_end(self, event, condition, pressed):
-        """
-        Выстрел мячом.
-
-        Происходит при отпускании кнопки мыши.
-        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
-        """
-        global balls, bullet
-        if condition:
-            bullet += 1
-            if(pressed == 0):
-                new_ball = Ball(self.screen, self.x, self.y, 300)
-                speed = 1
-            elif(pressed == 2):
-                new_ball = Rocket(self.screen, self.x, self.y, FPS * 9)
-                speed = 0.1
-                rocket_fly.play()
-            else:
-                return
-            new_ball.r += 5
-            self.an = math.atan2((event.pos[1]-new_ball.y), (event.pos[0]-new_ball.x))
-            new_ball.vx = self.f2_power * math.cos(self.an) * speed
-            new_ball.vy = - self.f2_power * math.sin(self.an) * speed
-            balls.append(new_ball)
-
-            shoot = pygame.mixer.Sound("shoot.wav")
-            shoot.play()
-        self.f2_on = 0
-        self.f2_power = 10
-
-
-
-    def targetting(self, event):
-        """
-        Прицеливание. Зависит от положения мыши.
-        """
-        if event.pos[0] == self.x:
-            a = self.x + 0.001
-        else:
-            a = event.pos[0]
-
-        if event:
-            self.an = math.atan((event.pos[1]-self.y) / (a-self.x))
-        if self.f2_on:
-            self.color = RED
-        else:
-            self.color = GREY
+        self.reload_time = FPS * 5
+        self.reload_time_current = self.reload_time
+        self.is_reload = False
 
     def draw(self):
         '''
@@ -281,13 +213,105 @@ class Gun:
         pygame.draw.polygon(self.screen, self.color, coordinates)
         pygame.draw.circle(self.screen, self.color, (self.x, self.y), 5)
 
+    def move(self, key_arr):
+        '''
+        чтобы пушка двигалась
+        '''
+
+        if(key_arr[100] == True):
+            self.x += self.v
+        elif(key_arr[97] == True):
+            self.x -= self.v
+
+        # столкновение со стенам
+        if (self.x + self.r >= WIDTH):
+            self.x = WIDTH - self.r
+        if (self.x - self.r <= 0):
+            self.x = self.r
+        if (self.y + self.r >= HEIGHT):
+            self.y = HEIGHT - self.r
+        if (self.y - self.r <= 0):
+            self.y = self.r
+
+    def reload(self, key_arr):
+        if not self.is_reload:
+            if key_arr[114]:
+                self.is_reload = True
+                self.color = RED
+        else:
+            if self.reload_time_current > 0:
+                self.reload_time_current -= 1
+            else:
+                reload_sound = pygame.mixer.Sound("reload.wav")
+                reload_sound.play()
+
+                self.cannonball_amount = 5
+                self.rocket_amount = 1
+
+                self.reload_time_current = self.reload_time
+                self.is_reload = False
+                self.color = GREY
+
+    def targetting(self, event):
+        """
+        Прицеливание. Зависит от положения мыши.
+        """
+        if event.pos[0] == self.x:
+            a = self.x + 0.001
+        else:
+            a = event.pos[0]
+
+        self.an = math.atan((event.pos[1]-self.y) / (a-self.x))
+
     def power_up(self):
         if self.f2_on:
             if self.f2_power < 50:
                 self.f2_power += 1
-            self.color = RED
-        else:
+            if self.color != RED:
+                self.color = YELLOW
+        elif self.color != RED:
             self.color = GREY
+
+    def fire2_start(self, condition, pressed):
+        if condition and (pressed == 0 and self.cannonball_amount > 0 or pressed == 2 and self.rocket_amount > 0) and not self.is_reload:
+            self.f2_on = 1
+        else:
+            self.f2_on = 0
+
+    def fire2_end(self, event, condition, pressed):
+        """
+        Выстрел мячом.
+
+        Происходит при отпускании кнопки мыши.
+        Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
+        """
+        global balls, bullet
+        if condition and not self.is_reload:
+            bullet += 1
+
+            if pressed == 0 and self.cannonball_amount > 0:
+                self.cannonball_amount -= 1
+                new_ball = Ball(self.screen, self.x, self.y, 300)
+                speed = 1
+
+            elif pressed == 2 and self.rocket_amount > 0:
+                self.rocket_amount -= 1
+                new_ball = Rocket(self.screen, self.x, self.y, FPS * 9)
+                speed = 0.1
+                rocket_fly.play()
+            else:
+                return
+            new_ball.r += 5
+            self.an = math.atan2((event.pos[1] - new_ball.y), (event.pos[0] - new_ball.x))
+            new_ball.vx = self.f2_power * math.cos(self.an) * speed
+            new_ball.vy = - self.f2_power * math.sin(self.an) * speed
+            balls.append(new_ball)
+
+            shoot = pygame.mixer.Sound("shoot.wav")
+            shoot.play()
+        self.f2_on = 0
+        self.f2_power = 10
+
 
 class Target:
     def __init__(self):
@@ -337,6 +361,7 @@ class Target:
 
     def draw(self):
         pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
+
 
 class Particle:
     def __init__(self, x, y, vx, vy, vect, life_long=20, colour=ORANGE):
@@ -398,24 +423,41 @@ bullet_mem = bullet
 time_rocket = FPS
 rocket_fly = pygame.mixer.Sound("rocket3.wav")
 
-font = pygame.font.Font(None, 36)
+font_size = 36
+font = pygame.font.Font(None, font_size)
 
 pressed = 0
 
 while not finished:
     screen.fill(WHITE)
 
+    ammo_str = "Ядра: " + str(gun.cannonball_amount) + "; Ракеты: " + str(gun.rocket_amount)
+    text = font.render(ammo_str, 1, BLACK)
+    screen.blit(text, (10, 50))
+
     text = font.render("ЛКМ — Ядро", 1, BLACK)
-    screen.blit(text, (10, 50 + 36))
+    screen.blit(text, (10, 50 + font_size))
 
     text = font.render("ПКМ — Ракета", 1, BLACK)
-    screen.blit(text, (10, 50 + 36 * 2))
+    screen.blit(text, (10, 50 + font_size * 2))
+
+    text = font.render("[R] — Перезарядка", 1, BLACK)
+    screen.blit(text, (10, 50 + font_size * 3))
+
+    if gun.is_reload:
+        reload_time_text = "Идёт перезарядка: " + str(math.floor(gun.reload_time_current / FPS))
+        text = font.render(reload_time_text, 1, BLACK)
+        screen.blit(text, (10, 50 + font_size * 4))
 
     for p in particles:
         p.draw()
         p.move()
 
+    key_arr = pygame.key.get_pressed()
+
     gun.draw()
+    gun.move(key_arr)
+    gun.reload(key_arr)
 
     for t in targets:
         if t.live:
@@ -446,7 +488,7 @@ while not finished:
 
             text1 = font.render(message, 1, BLACK)
 
-            screen.blit(text1, (10, 50))
+            screen.blit(text1, (10, 50 - font_size))
 
         else:
             any_live = True
@@ -462,7 +504,7 @@ while not finished:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_arr = pygame.mouse.get_pressed()
             for i in range(len(mouse_arr)):
-                if (mouse_arr[i] == True):
+                if mouse_arr[i]:
                     pressed = i
             condition = False
             for t in targets:
@@ -479,8 +521,6 @@ while not finished:
             gun.fire2_end(event, condition, pressed)
         elif event.type == pygame.MOUSEMOTION:
             gun.targetting(event)
-
-    gun.move()
 
     is_rocket = 0
     for b in balls: # попадание
