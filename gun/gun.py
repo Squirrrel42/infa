@@ -317,9 +317,7 @@ class Target:
     def __init__(self):
         self.points = 0
         self.live = 1
-        self.new_target()
 
-    def new_target(self):
         """
         Инициализация новой цели.
         """
@@ -441,7 +439,16 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 bullet = 0
 balls = []
 gun = Gun(screen)
-targets = [Target(), Target()]
+
+def random_target():
+    choice_target = random.randint(0, 1)
+    if choice_target == 0:
+        return Target()
+    if choice_target == 1:
+        return Second()
+    return Target()
+
+targets = [random_target(), random_target()]
 particles = []
 
 any_live = True
@@ -567,7 +574,7 @@ while not finished:
                 t.live = 0
                 time = 0
                 t.hit()
-                t.new_target()
+                t = random_target()
 
     any_live = False
     for t in targets:
