@@ -337,7 +337,7 @@ class Target:
         pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
 
 class Particle:
-    def __init__(self, x, y, vx, vy, vect):
+    def __init__(self, x, y, vx, vy, vect, life_long=20, colour=ORANGE):
         self.angle = random.randint(-10, 10) * math.pi / 10
 
         self.x = x
@@ -350,7 +350,9 @@ class Particle:
 
         self.acc = -0.2
 
-        self.life_long = 20
+        self.life_long = life_long
+
+        self.colour = colour
 
     def move(self):
         # ускорение свободного падения
@@ -365,7 +367,7 @@ class Particle:
         self.y -= self.vy  # минус потому что ось y направлена вниз
 
     def draw(self):
-        pygame.draw.circle(screen, ORANGE, (self.x, self.y), 2)
+        pygame.draw.circle(screen, self.colour, (self.x, self.y), 2)
 
     def life(self):
         if self.life_long > 0:
@@ -451,11 +453,15 @@ while not finished:
     gun.move()
 
     is_rocket = 0
-    for b in balls:
+    for b in balls: # попадание
         b.move()
         if b.hittest(target) and target.live:
             explosion = pygame.mixer.Sound("Explosion2.wav")
             explosion.play()
+
+            for i in range(100):
+                particles.append(Particle(target.x, target.y, random.randint(5, 15), random.randint(5, 15), [0, -1], 100, RED))
+
 
             target.live = 0
             time = 0
