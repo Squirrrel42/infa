@@ -392,6 +392,10 @@ class Second(Target):
             self.x += self.vx
             self.y += self.vy
 
+    def draw(self):
+        pygame.draw.rect(screen, GREEN, (self.x - self.r, self.y - self.r, self.r * 2, self.r * 2))
+
+
 
 class Particle:
     def __init__(self, x, y, vx, vy, vect, life_long=20, colour=ORANGE):
@@ -575,6 +579,8 @@ while not finished:
                 time = 0
                 t.hit()
                 t = random_target()
+                t.live = 0
+
 
     any_live = False
     for t in targets:
