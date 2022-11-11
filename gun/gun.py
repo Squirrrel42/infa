@@ -1,8 +1,7 @@
 import math
 import random
-from random import choice
-
 import pygame
+import time
 
 
 FPS = 60
@@ -396,6 +395,37 @@ class Second(Target):
         pygame.draw.rect(screen, GREEN, (self.x - self.r, self.y - self.r, self.r * 2, self.r * 2))
 
 
+class Bomber(Target):
+    def move(self):
+        # столкновение со стенам
+        if (self.x + self.r >= WIDTH):
+            self.vx = -self.vx
+            self.x = WIDTH - self.r
+        if (self.x - self.r <= 0):
+            self.vx = -self.vx
+            self.x = self.r
+        '''if (self.y + self.r >= HEIGHT):
+            self.vy = -self.vy
+            self.y = HEIGHT - self.r
+        if (self.y - self.r <= 0):
+            self.vy = -self.vy
+            self.y = self.r'''
+
+        if self.x - gun.x != 0:
+            vect = (self.x - gun.x) / abs(self.x - gun.x)
+        else:
+            vect = 0
+
+        # перемещение
+        self.y = 200 + 100 * math.cos(time.time() * 10)
+        self.x -= vect * 2
+
+    def draw(self):
+        pygame.draw.polygon(screen, MAGENTA, ([self.x - self.r, self.y + self.r],
+                                              [self.x + self.r, self.y + self.r],
+                                              [self.x, self.y - self.r]))
+
+
 
 class Particle:
     def __init__(self, x, y, vx, vy, vect, life_long=20, colour=ORANGE):
@@ -445,11 +475,13 @@ balls = []
 gun = Gun(screen)
 
 def random_target():
-    choice_target = random.randint(0, 1)
+    choice_target = random.randint(0, 2)
     if choice_target == 0:
         return Target()
     if choice_target == 1:
         return Second()
+    if choice_target == 2:
+        return Bomber()
     return Target()
 
 targets = [random_target(), random_target()]
@@ -460,7 +492,7 @@ any_live = True
 clock = pygame.time.Clock()
 finished = False
 
-time = 0
+my_time = 0
 bullet_mem = bullet
 
 time_rocket = FPS
@@ -512,8 +544,8 @@ while not finished:
 
     # будет писать после каждого попадания сколько понадобилось шаров и запретит стрлять в течение нескольких секунд после
     if not any_live:
-        if time <= FPS * 9:
-            time += 1
+        if my_time <= FPS * 9:
+            my_time += 1
 
             match bullet_mem % 100:
                 case 11 | 12 | 13 | 14:
@@ -576,7 +608,7 @@ while not finished:
                     particles.append(Particle(t.x, t.y, random.randint(-15, 15), random.randint(1, 15) - 20, [0, -1], 100, RED))
 
                 t.live = 0
-                time = 0
+                my_time = 0
                 t.hit()
                 t = random_target()
                 t.live = 0
