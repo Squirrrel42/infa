@@ -182,6 +182,8 @@ class Gun:
         self.reload_time_current = self.reload_time
         self.is_reload = False
 
+        self.live = 3
+
     def draw(self):
         '''
         рисуем пушку
@@ -311,6 +313,12 @@ class Gun:
         self.f2_on = 0
         self.f2_power = 10
 
+    def is_alive(self):
+        if self.live > 0:
+            return True
+        else:
+            return False
+
 
 class Target:
     def __init__(self):
@@ -331,7 +339,10 @@ class Target:
         self.vx = random.randint(2, 10)
         self.vy = random.randint(2, 10)
 
-        self.color = RED
+        self.color = CYAN
+
+        self.time_attack = FPS * random.randint(20, 50) / 10
+        self.time_attack_current = self.time_attack
 
     def move(self):
         # столкновение со стенам
@@ -404,12 +415,6 @@ class Bomber(Target):
         if (self.x - self.r <= 0):
             self.vx = -self.vx
             self.x = self.r
-        '''if (self.y + self.r >= HEIGHT):
-            self.vy = -self.vy
-            self.y = HEIGHT - self.r
-        if (self.y - self.r <= 0):
-            self.vy = -self.vy
-            self.y = self.r'''
 
         if self.x - gun.x != 0:
             vect = (self.x - gun.x) / abs(self.x - gun.x)
@@ -417,13 +422,50 @@ class Bomber(Target):
             vect = 0
 
         # перемещение
-        self.y = 200 + 100 * math.cos(time.time() * 10)
-        self.x -= vect * 2
+        self.y = (30 + 10 * math.cos(time.time() * 10)) * self.vy
+        self.x -= vect * (self.vx / 5 + 1)
 
     def draw(self):
         pygame.draw.polygon(screen, MAGENTA, ([self.x - self.r, self.y + self.r],
                                               [self.x + self.r, self.y + self.r],
                                               [self.x, self.y - self.r]))
+
+    def attack(self, bombs):
+        if self.time_attack_current > 0:
+            self.time_attack_current -= 1
+        else:
+            self.time_attack_current = self.time_attack
+            bombs.append(Bomb(self.x, self.y))
+
+class Bomb:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+        self.r = 10
+
+        self.vy = 0
+
+        self.acc = -1
+
+        self.hitted = False
+
+    def draw(self):
+        pygame.draw.circle(screen, RED, (self.x, self.y), self.r)
+
+    def move(self):
+        self.vy += self.acc
+        self.y -= self.vy
+
+    def check_hit(self, gun):
+        if math.sqrt((self.x - gun.x) ** 2 + (self.y - gun.y) ** 2) <= self.r + gun.r:
+            hit_sound = pygame.mixer.Sound("Hit.wav")
+            hit_sound.play()
+
+            gun.live -= 1
+
+            self.hitted = True
+
 
 
 
@@ -470,6 +512,13 @@ class Particle:
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+pygame.mixer.music.load("tu_tududu.mp3")
+pygame.mixer.music.play(-1)
+
+heart_icon = pygame.image.load("heart.png")
+heart_icon = pygame.transform.scale(heart_icon, (40, 40))
+
 bullet = 0
 balls = []
 gun = Gun(screen)
@@ -484,7 +533,10 @@ def random_target():
         return Bomber()
     return Target()
 
-targets = [random_target(), random_target()]
+targets = []
+
+for i in range(3):
+    targets.append(random_target())
 particles = []
 
 any_live = True
@@ -503,8 +555,35 @@ font = pygame.font.Font(None, font_size)
 
 pressed = 0
 
+bombs = []
+
+death = False
+
+'''
+начало основного цикла
+'''
+
 while not finished:
     screen.fill(WHITE)
+
+    if gun.live == 0:
+        finished = True
+        death = True
+
+    for i in range(gun.live):
+        screen.blit(heart_icon, (WIDTH - 50 * (i + 1), 50))
+
+    for t in targets:
+        if type(t) == Bomber and t.live:
+            t.attack(bombs)
+
+    for b in bombs:
+        if b.y >= HEIGHT or b.hitted:
+            bombs.remove(b)
+        else:
+            b.move()
+            b.draw()
+            b.check_hit(gun)
 
     ammo_str = "Ядра: " + str(gun.cannonball_amount) + "; Ракеты: " + str(gun.rocket_amount)
     text = font.render(ammo_str, 1, BLACK)
@@ -565,6 +644,8 @@ while not finished:
 
             screen.blit(text1, (10, 50 - font_size))
 
+            bullet_mem = 0
+
         else:
             any_live = True
 
@@ -610,8 +691,9 @@ while not finished:
                 t.live = 0
                 my_time = 0
                 t.hit()
-                t = random_target()
-                t.live = 0
+                targets.remove(t)
+                targets.append(random_target())
+                targets[-1].live = 0
 
 
     any_live = False
@@ -631,5 +713,24 @@ while not finished:
             particles.remove(p)
 
     gun.power_up()
+
+if(death == True):
+    screen.fill(BLACK)
+
+    rocket_fly.stop()
+
+    font2 = pygame.font.Font(None, int(WIDTH/4))
+    text = font2.render("YOU DIED", 1, (225, 0, 0))
+
+    screen.blit(text, (50, int(HEIGHT/3)))
+
+    pygame.display.update()
+
+    pygame.mixer.music.stop()
+
+    pygame.mixer.music.load("death.mp3")
+    pygame.mixer.music.play()
+
+    pygame.time.delay(7000)
 
 pygame.quit()
