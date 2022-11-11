@@ -42,6 +42,8 @@ class Ball:
         self.vx = 0
         self.vy = 0
 
+        self.vect = [0, 0]
+
         self.color = BLACK
 
         self.live = live_long
@@ -110,17 +112,20 @@ class Rocket(Ball):
         pygame.draw.circle(self.screen, ORANGE, (self.x, self.y), self.r)
 
         # получим единичный вектор, направленный вдоль скорости
-        vect = [self.vx, self.vy]
+        self.vect = [self.vx, self.vy]
         mod = math.sqrt(self.vx ** 2 + self.vy ** 2)
         if(mod == 0):
-            vect = [0, 0]
+            self.vect = [0, 0]
         else:
-            vect = [vect[0] / mod, vect[1] / mod]
+            self.vect = [self.vect[0] / mod, self.vect[1] / mod]
 
 
-        pygame.draw.line(self.screen, BLACK, (self.x, self. y), (self.x - vect[0] * 10, self.y - vect[1] * 10))
+        pygame.draw.line(self.screen, BLACK, (self.x, self. y), (self.x - self.vect[0] * 10, self.y - self.vect[1] * 10))
 
     def move(self):
+        for i in range(5):
+            particles.append(Particle(b.x, b.y, b.vx, b.vy, b.vect))
+
         # столкновение со стенам
         if (self.x + self.r >= WIDTH):
             self.vx = -self.vx / 10
@@ -210,8 +215,9 @@ class Gun:
                 new_ball = Ball(self.screen, self.x, self.y, 300)
                 speed = 1
             elif(pressed == 2):
-                new_ball = Rocket(self.screen, self.x, self.y, 600)
+                new_ball = Rocket(self.screen, self.x, self.y, FPS * 9)
                 speed = 0.1
+                rocket_fly.play()
             else:
                 return
             new_ball.r += 5
@@ -219,8 +225,13 @@ class Gun:
             new_ball.vx = self.f2_power * math.cos(self.an) * speed
             new_ball.vy = - self.f2_power * math.sin(self.an) * speed
             balls.append(new_ball)
+
+            shoot = pygame.mixer.Sound("shoot.wav")
+            shoot.play()
         self.f2_on = 0
         self.f2_power = 10
+
+
 
     def targetting(self, event):
         """
@@ -325,7 +336,43 @@ class Target:
     def draw(self):
         pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
 
+class Particle:
+    def __init__(self, x, y, vx, vy, vect):
+        self.angle = random.randint(-10, 10) * math.pi / 10
 
+        self.x = x
+        self.y = y
+
+        self.vx = (vx * math.cos(self.angle) - vy * math.sin(self.angle)) / 5
+        self.vy = (vx * math.sin(self.angle) + vy * math.cos(self.angle)) / 5
+
+        self.vect = vect
+
+        self.acc = -0.2
+
+        self.life_long = 20
+
+    def move(self):
+        # ускорение свободного падения
+        self.vy += self.acc
+
+        # сопротивление воздуха
+        self.vy -= self.vy * 0.02
+        self.vx -= self.vx * 0.02
+
+        # перемещение
+        self.x += self.vx
+        self.y -= self.vy  # минус потому что ось y направлена вниз
+
+    def draw(self):
+        pygame.draw.circle(screen, ORANGE, (self.x, self.y), 2)
+
+    def life(self):
+        if self.life_long > 0:
+            self.life_long -= 1
+            return True
+        else:
+            return False
 
 
 pygame.init()
@@ -341,12 +388,19 @@ finished = False
 time = 0
 bullet_mem = bullet
 
+time_rocket = FPS
+rocket_fly = pygame.mixer.Sound("rocket3.wav")
+particles = []
+
 while not finished:
     screen.fill(WHITE)
 
-
+    for p in particles:
+        p.draw()
+        p.move()
 
     gun.draw()
+
     if target.live:
         target.draw()
     for b in balls:
@@ -385,6 +439,7 @@ while not finished:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_arr = pygame.mouse.get_pressed()
             for i in range(len(mouse_arr)):
+                pressed = 0
                 if (mouse_arr[i] == True):
                     pressed = i
             gun.fire2_start(target, pressed)
@@ -395,9 +450,13 @@ while not finished:
 
     gun.move()
 
+    is_rocket = 0
     for b in balls:
         b.move()
         if b.hittest(target) and target.live:
+            explosion = pygame.mixer.Sound("Explosion2.wav")
+            explosion.play()
+
             target.live = 0
             time = 0
             target.hit()
@@ -415,8 +474,9 @@ while not finished:
             balls.remove(b)
 
 
-
-
+    for p in particles:
+        if not p.life():
+            particles.remove(p)
 
     gun.power_up()
 
