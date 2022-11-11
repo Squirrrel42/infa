@@ -638,16 +638,17 @@ while not finished:
                         case _:
                             ending = "ов"
 
-            message = "Вы уничтожили цель за " + str(bullet_mem) + " выстрел" + ending
+            message = "Вы уничтожили цели за " + str(bullet_mem) + " выстрел" + ending
 
             text1 = font.render(message, 1, BLACK)
 
             screen.blit(text1, (10, 50 - font_size))
 
-            bullet_mem = 0
-
         else:
             any_live = True
+
+            bullet_mem = 0
+            bullet = 0
 
             for t in targets:
                 t.live = 1
