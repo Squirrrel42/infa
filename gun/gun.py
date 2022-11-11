@@ -460,7 +460,7 @@ while not finished:
             explosion.play()
 
             for i in range(100):
-                particles.append(Particle(target.x, target.y, random.randint(5, 15), random.randint(5, 15), [0, -1], 100, RED))
+                particles.append(Particle(target.x, target.y, random.randint(-15, 15), random.randint(1, 15) - 20, [0, -1], 100, RED))
 
 
             target.live = 0
