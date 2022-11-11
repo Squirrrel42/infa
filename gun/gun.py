@@ -109,7 +109,6 @@ class Ball:
 
 class Rocket(Ball):
     def draw(self):
-        pygame.draw.circle(self.screen, ORANGE, (self.x, self.y), self.r)
 
         # получим единичный вектор, направленный вдоль скорости
         self.vect = [self.vx, self.vy]
@@ -119,8 +118,11 @@ class Rocket(Ball):
         else:
             self.vect = [self.vect[0] / mod, self.vect[1] / mod]
 
+        coordinates = [[self.x + self.vect[1] * 10 - self.vect[0] * self.r, self.y - self.vect[0] * 10 - self.vect[1] * self.r],
+                       [self.x - self.vect[1] * 10 - self.vect[0] * self.r, self.y + self.vect[0] * 10 - self.vect[1] * self.r],
+                       [self.x + self.vect[0] * self.r, self.y + self.vect[1] * self.r]]
 
-        pygame.draw.line(self.screen, BLACK, (self.x, self. y), (self.x - self.vect[0] * 10, self.y - self.vect[1] * 10))
+        pygame.draw.polygon(self.screen, ORANGE, coordinates)
 
     def move(self):
         for i in range(5):
@@ -194,14 +196,14 @@ class Gun:
         if (self.y - self.r <= 0):
             self.y = self.r
 
-    def fire2_start(self, target, pressed):
-        if target.live and (pressed == 0 or pressed == 2):
+    def fire2_start(self, condition, pressed):
+        if condition and (pressed == 0 or pressed == 2):
             self.f2_on = 1
         else:
             self.f2_on = 0
 
 
-    def fire2_end(self, event, target, pressed):
+    def fire2_end(self, event, condition, pressed):
         """
         Выстрел мячом.
 
@@ -209,7 +211,7 @@ class Gun:
         Начальные значения компонент скорости мяча vx и vy зависят от положения мыши.
         """
         global balls, bullet
-        if target.live:
+        if condition:
             bullet += 1
             if(pressed == 0):
                 new_ball = Ball(self.screen, self.x, self.y, 300)
@@ -381,10 +383,13 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 bullet = 0
 balls = []
+gun = Gun(screen)
+targets = [Target(), Target()]
+particles = []
+
+any_live = True
 
 clock = pygame.time.Clock()
-gun = Gun(screen)
-target = Target()
 finished = False
 
 time = 0
@@ -392,10 +397,19 @@ bullet_mem = bullet
 
 time_rocket = FPS
 rocket_fly = pygame.mixer.Sound("rocket3.wav")
-particles = []
+
+font = pygame.font.Font(None, 36)
+
+pressed = 0
 
 while not finished:
     screen.fill(WHITE)
+
+    text = font.render("ЛКМ — Ядро", 1, BLACK)
+    screen.blit(text, (10, 50 + 36))
+
+    text = font.render("ПКМ — Ракета", 1, BLACK)
+    screen.blit(text, (10, 50 + 36 * 2))
 
     for p in particles:
         p.draw()
@@ -403,35 +417,42 @@ while not finished:
 
     gun.draw()
 
-    if target.live:
-        target.draw()
+    for t in targets:
+        if t.live:
+            t.draw()
+
     for b in balls:
+        b.move()
         b.draw()
 
-
-
     # будет писать после каждого попадания сколько понадобилось шаров и запретит стрлять в течение нескольких секунд после
-    if not target.live:
-        if time <= 300:
+    if not any_live:
+        if time <= FPS * 9:
             time += 1
 
-            match bullet_mem % 10:
-                case 1:
-                    ending = ""
-                case 2 | 3 | 4:
-                    ending = "а"
-                case _:
+            match bullet_mem % 100:
+                case 11 | 12 | 13 | 14:
                     ending = "ов"
+                case _:
+                    match bullet_mem % 10:
+                        case 1:
+                            ending = ""
+                        case 2 | 3 | 4:
+                                ending = "а"
+                        case _:
+                            ending = "ов"
 
             message = "Вы уничтожили цель за " + str(bullet_mem) + " выстрел" + ending
 
-            font = pygame.font.Font(None, 36)
             text1 = font.render(message, 1, BLACK)
 
             screen.blit(text1, (10, 50))
 
         else:
-            target.live = 1
+            any_live = True
+
+            for t in targets:
+                t.live = 1
 
     pygame.display.update()
     clock.tick(FPS)
@@ -441,12 +462,21 @@ while not finished:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             mouse_arr = pygame.mouse.get_pressed()
             for i in range(len(mouse_arr)):
-                pressed = 0
                 if (mouse_arr[i] == True):
                     pressed = i
-            gun.fire2_start(target, pressed)
+            condition = False
+            for t in targets:
+                if t.live:
+                    condition = True
+                    break
+            gun.fire2_start(condition, pressed)
         elif event.type == pygame.MOUSEBUTTONUP:
-            gun.fire2_end(event, target, pressed)
+            condition = False
+            for t in targets:
+                if t.live:
+                    condition = True
+                    break
+            gun.fire2_end(event, condition, pressed)
         elif event.type == pygame.MOUSEMOTION:
             gun.targetting(event)
 
@@ -454,31 +484,30 @@ while not finished:
 
     is_rocket = 0
     for b in balls: # попадание
-        b.move()
-        if b.hittest(target) and target.live:
-            explosion = pygame.mixer.Sound("Explosion2.wav")
-            explosion.play()
+        for t in targets:
+            if b.hittest(t) and t.live:
+                explosion = pygame.mixer.Sound("Explosion2.wav")
+                explosion.play()
 
-            for i in range(100):
-                particles.append(Particle(target.x, target.y, random.randint(-15, 15), random.randint(1, 15) - 20, [0, -1], 100, RED))
+                for i in range(100):
+                    particles.append(Particle(t.x, t.y, random.randint(-15, 15), random.randint(1, 15) - 20, [0, -1], 100, RED))
 
+                t.live = 0
+                time = 0
+                t.hit()
+                t.new_target()
 
-            target.live = 0
-            time = 0
-            target.hit()
-            target.new_target()
-
+    any_live = False
+    for t in targets:
+        if t.live:
+            t.move()
+            any_live = True
+        else:
             bullet_mem = bullet
-
-            bullet = 0
-
-    if target.live:
-        target.move()
 
     for b in balls:
         if not b.life():
             balls.remove(b)
-
 
     for p in particles:
         if not p.life():
