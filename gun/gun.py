@@ -363,6 +363,38 @@ class Target:
         pygame.draw.circle(screen, self.color, [self.x, self.y], self.r)
 
 
+class Second(Target):
+    def move(self):
+        # столкновение со стенам
+        if (self.x + self.r >= WIDTH):
+            self.vx = -self.vx
+            self.x = WIDTH - self.r
+        if (self.x - self.r <= 0):
+            self.vx = -self.vx
+            self.x = self.r
+        if (self.y + self.r >= HEIGHT):
+            self.vy = -self.vy
+            self.y = HEIGHT - self.r
+        if (self.y - self.r <= 0):
+            self.vy = -self.vy
+            self.y = self.r
+
+        for b in balls:
+            vect = [b.x, b.y]
+            mod = math.sqrt((self.x - vect[0]) ** 2 + (self.y - vect[1]) ** 2)
+
+            if (mod <= 100):
+                a = [(vect[0] - self.x) / mod, (vect[1] - self.y) / mod]
+            else:
+                a = [self.vx / 20, self.vy / 20]
+
+            self.vx -= a[0]
+            self.vy -= a[1]
+
+            self.x += self.vx
+            self.y += self.vy
+
+
 class Particle:
     def __init__(self, x, y, vx, vy, vect, life_long=20, colour=ORANGE):
         self.angle = random.randint(-10, 10) * math.pi / 10
