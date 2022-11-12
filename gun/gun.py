@@ -586,21 +586,21 @@ while not finished:
             b.check_hit(gun)
 
     ammo_str = "Ядра: " + str(gun.cannonball_amount) + "; Ракеты: " + str(gun.rocket_amount)
-    text = font.render(ammo_str, 1, BLACK)
+    text = font.render(ammo_str, True, BLACK)
     screen.blit(text, (10, 50))
 
-    text = font.render("ЛКМ — Ядро", 1, BLACK)
+    text = font.render("ЛКМ — Ядро", True, BLACK)
     screen.blit(text, (10, 50 + font_size))
 
-    text = font.render("ПКМ — Ракета", 1, BLACK)
+    text = font.render("ПКМ — Ракета", True, BLACK)
     screen.blit(text, (10, 50 + font_size * 2))
 
-    text = font.render("[R] — Перезарядка", 1, BLACK)
+    text = font.render("[R] — Перезарядка", True, BLACK)
     screen.blit(text, (10, 50 + font_size * 3))
 
     if gun.is_reload:
         reload_time_text = "Идёт перезарядка: " + str(math.floor(gun.reload_time_current / FPS))
-        text = font.render(reload_time_text, 1, BLACK)
+        text = font.render(reload_time_text, True, BLACK)
         screen.blit(text, (10, 50 + font_size * 4))
 
     for p in particles:
@@ -640,7 +640,7 @@ while not finished:
 
             message = "Вы уничтожили цели за " + str(bullet_mem) + " выстрел" + ending
 
-            text1 = font.render(message, 1, BLACK)
+            text1 = font.render(message, True, BLACK)
 
             screen.blit(text1, (10, 50 - font_size))
 
@@ -721,7 +721,7 @@ if(death == True):
     rocket_fly.stop()
 
     font2 = pygame.font.Font(None, int(WIDTH/4))
-    text = font2.render("YOU DIED", 1, (225, 0, 0))
+    text = font2.render("YOU DIED", True, (225, 0, 0))
 
     screen.blit(text, (50, int(HEIGHT/3)))
 
