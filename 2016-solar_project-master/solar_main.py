@@ -2,8 +2,8 @@
 # license: GPLv3
 
 import tkinter
-import matplotlib.pyplot as plt
 import pylab
+import math
 from tkinter.filedialog import *
 from solar_vis import *
 from solar_model import *
@@ -49,8 +49,8 @@ def execution():
     for obj in space_objects:
         if obj.type == "planet":
             obj.statistic[0].append(physical_time)
-            obj.statistic[1].append((obj.Vx ** 2 + obj.Vy ** 2) ** 0.5)
-            obj.statistic[2].append(((obj.x - star.x) ** 2 + (obj.y - star.y) ** 2) ** 0.5)
+            obj.statistic[1].append(math.sqrt(obj.Vx ** 2 + obj.Vy ** 2))
+            obj.statistic[2].append(math.sqrt((obj.x - star.x) ** 2 + (obj.y - star.y) ** 2))
 
     if perform_execution:
         space.after(101 - int(time_speed.get()), execution)
